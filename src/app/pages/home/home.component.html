@@ -1,0 +1,156 @@
+<div class="container">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">✦</div>
+      <div class="logo-text">Task Manager</div>
+    </div>
+
+    <div class="add-task-section">
+      <input type="text" [(ngModel)]="taskText" class="task-input" placeholder="Add a new task..." id="taskInput" />
+      <select class="category-select" id="categorySelect" [(ngModel)]="category" >
+            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+       </select>
+      <button class="add-btn" (click)="addTask()">+ Add Task</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="tab-navigation">
+      <div class="tab" [ngClass]="{ 'active': filterTab === 'all' }" (click)="switchFilterTab('all')">All Tasks</div>
+      <div class="tab" [ngClass]="{ 'active': filterTab === 'active' }" (click)="switchFilterTab('active')">Active</div>
+      <div class="tab" [ngClass]="{ 'active': filterTab === 'completed' }" (click)="switchFilterTab('completed')">Completed</div>
+    </div>
+
+    <div class="filters-section">
+        <div class="filters-header">
+            <span>🔍</span>
+            <span>Filters & Sorting</span>
+        </div>
+        <div class="filters-content">
+            <div class="filter-group">
+                <div>
+                    <select class="filter-category" id="categorySelect" [(ngModel)]="filterCategory" (change)="toggleCategoryFilter('category')">
+                        <option value="All">All Categories</option>
+                        <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+                    </select>
+                </div>
+            
+                <div id="sortFilter">
+            <select class="sortDropdown filter-btn " id="sortDropdown" [(ngModel)]="sortFilter" (change)="applySort()">
+               <option value="date-desc">Sort By </option>
+                 <option value="date-desc">Newest First</option>
+                 <option value="date-asc">Oldest First</option>
+                 <option value="atoz">A → Z</option>
+                 <option value="ztoa">Z → A</option>
+                 <option value="status">Status</option>
+                 <option value="category">Category</option>
+            </select>
+                </div>
+
+                <button class="add-category-btn" (click)="openCategoryPopup()">
+                    <span>+</span>
+                    <span>Add Category</span>
+                </button>
+        
+                <button class="manage-category-btn" (click)="openManageCategoryPopup()">
+                    <span>⚙️</span>
+                    <span>Manage Categories</span>
+                </button>
+            </div>
+            <div class="task-count">{{ getTotalTaskCount() }} tasks</div>
+        </div>
+    </div>
+
+    <div class="tasks-list">
+      <div class="empty-state" *ngIf="getTotalTaskCount() == 0">
+        <div class="empty-icon">📝</div>
+        <div>No tasks yet. Add your first task above!</div>
+      </div>
+
+      <ng-container *ngIf="getTotalTaskCount() > 0">
+        <div class="task-group">
+         
+          <div class="task-item" *ngFor="let task of allTasks" [ngClass]="{ 'completed': task.completed }">
+             <input type="checkbox" [checked]="task.completed" (change)="toggleTask(task)" class="task-checkbox" />
+
+             <div class="task-details" [ngStyle]="{ display:'contents' }">
+                <a href="#" (click)="openTaskPopup(task)"  class="task-text"
+                    [ngStyle]="{ 'text-decoration': task.completed ? 'line-through' : 'underline', 'color': '#2563eb', 'cursor': 'pointer' }">  {{ task.todoText }} </a>
+               <span class="task-category-pill">{{ task.category }}</span>
+             </div>
+             
+             
+             <button class="delete-btn task-delete" (click)="deleteTask(task.id)">Delete</button>
+            </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal" *ngIf="showCategoryPopup">
+  <div class="modal-content">
+    <div class="modal-header"><h3>Add New Category</h3></div>
+    <div class="form-group" >
+        <input
+          type="text"
+          placeholder="Enter category name..."
+          [(ngModel)]="newCategory"
+          class="task-input" 
+          [ngStyle]="{ width:     '100%' }"
+        />
+    </div>
+    <div class="modal-actions">
+      <button class="cancel-btn" (click)="closeCategoryPopup()">Cancel</button>
+      <button class="add-btn" (click)="addCategory()">Add Category</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="categoryModal" *ngIf="showManageCategoryModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">Manage Categories</div>
+        <div class="category-list" id="categoryList" *ngFor="let cat  of categories" >
+             <div class="category-item">
+                <div class="category-name">
+                    {{cat }}
+                </div>
+                <button class="delete-category-btn" (click)="deleteCategory(cat)">
+                        Delete
+                </button>
+                
+             </div>
+
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn secondary" (click)="closeManageCategoryPopup()">Close</button>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal" id="taskPopup" *ngIf="showTaskPopup">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">Edit Todo Item</div>
+            <div class="form-group" >
+                   <label class="form-label" for="todoText">
+                      <span class="form-icon">📝</span> Todo:
+                   </label>
+                   <input  type="text" id="todoText"  class="task-input"  value="task" [(ngModel)]="editedText" [ngStyle]="{ width:     '100%' }">
+            </div>
+             <div class="form-group" >
+                <select [(ngModel)]="editedCategory" class="form-select">
+                  <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" (click)="closeTaskPopup()">
+                    Cancel
+                </button>
+                <button class="btn btn-primary" (click) = "updateTaskText()">
+                    <span class="form-icon">💾</span> Save Changes
+                </button>
+            </div>
+    </div>
+</div>
